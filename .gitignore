@@ -1,2 +1,4 @@
 .idea
 bdc_helper.iml
+*.txt
+test.py
