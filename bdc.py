@@ -16,8 +16,10 @@ MINUS_WIGHT = 200
 MAX_HIT_NUM = 20
 # 最小分值，要求小于0
 MIN_HIT_NUM = -20
+# 单词保证出现概率为0
+NO_SHOW_HIT_NUM = -999
 # tip
-TIP_MESSAGE = "需要提示输入@不知道输入#退出输入$"
+TIP_MESSAGE = "需要提示输入@,不知道输入#,后续不再显示此单词输入$,退出输入%"
 # 正确得分
 RIGHT_SCORE = 5
 # 有提示后的得分
@@ -90,8 +92,10 @@ class WordCollection:
         words = self.name_content[word.sheet_name]
         old_hit_nums = word.hit_nums
         # 重设命中值
-        word.hit_nums = word.hit_nums + score
-        if word.hit_nums > MAX_HIT_NUM:
+        word.hit_nums = NO_SHOW_HIT_NUM if score == NO_SHOW_HIT_NUM else word.hit_nums + score
+        if word.hit_nums == NO_SHOW_HIT_NUM:
+            pass
+        elif word.hit_nums > MAX_HIT_NUM:
             word.hit_nums = MAX_HIT_NUM
         elif word.hit_nums < MIN_HIT_NUM:
             word.hit_nums = MIN_HIT_NUM
@@ -137,7 +141,10 @@ class WordCollection:
 
 def get_weight(word: Word) -> int:
     # 获取权重值
-    if word.hit_nums >= MAX_HIT_NUM:
+    if word.hit_nums == NO_SHOW_HIT_NUM:
+        # 出现概率为0
+        return 0
+    elif word.hit_nums >= MAX_HIT_NUM:
         return word.hit_nums * ORIGIN_WIGHT
     elif word.hit_nums <= 0:
         return word.nums * FORMAL_WEIGHT + abs(word.hit_nums * MINUS_WIGHT)
@@ -199,6 +206,9 @@ def init():
                 context.hint_one(one, WRONG_SCORE)
                 break
             elif in_ == "$":
+                # 后续不再显示此单词
+                context.hint_one(one, NO_SHOW_HIT_NUM)
+            elif in_ == "%":
                 context.excel_flush()
                 print("The end !!")
                 return
