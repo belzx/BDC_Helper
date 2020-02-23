@@ -2,3 +2,4 @@
 bdc_helper.iml
 *.txt
 test.py
+*.log

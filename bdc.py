@@ -1,6 +1,7 @@
 # 正式权重值
 import os
 import random
+import logging
 
 from openpyxl import Workbook, load_workbook
 
@@ -39,6 +40,15 @@ OPTION_EMUS = {
 }
 SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__)).split("bdc.py")[0]
 XL_PATH = os.path.join(SCRIPT_PATH, "dc_src.xlsx")
+
+logging.basicConfig(level=logging.INFO,  # 控制台打印的日志级别
+                    filename='bdc.log',
+                    filemode='a',  ##模式，有w和a，w就是写模式，每次都会重新写日志，覆盖之前的日志
+                    # a是追加模式，默认如果不写的话，就是追加模式
+                    format=
+                    '%(asctime)s : %(message)s'  # 日志格式
+
+                    )
 
 
 class Word:
@@ -113,11 +123,13 @@ class WordCollection:
         self.flush_list[word.id] = word.hit_nums
 
     def excel_flush(self):
+        print_in_red("结果开始刷新到磁盘")
         # 缓存刷新到硬盘
         for k in self.flush_list:
             table = self.excel[self.sheet_name]
             table.cell(row=k + 1, column=5).value = self.flush_list[k]
         self.excel.save(XL_PATH)
+        print_in_red("结果开始刷新完毕")
 
     def pick_one(self) -> Word:
         # 随机挑选，按权重
@@ -192,15 +204,16 @@ def init():
         print_in_wihte(question[0])
         while True:
             in_ = input().lower()
+            print_in_green("input:[%s]" % in_)
             if in_ == "@":
-                print(question[1])
+                print_in_tip(question[1])
                 in_ = input()
-                if in_ == one.word:
+                print_in_green("input:[%s]" % in_)
+                if in_ == question[1]:
                     context.hint_one(one, HELF_RIGHT_SCORE)
                     break
                 else:
                     print_in_red("输入有误，请重新输入！")
-                pass
             elif in_ == "#":
                 print_in_red(one.word)
                 context.hint_one(one, WRONG_SCORE)
@@ -210,13 +223,13 @@ def init():
                 context.hint_one(one, NO_SHOW_HIT_NUM)
             elif in_ == "%":
                 context.excel_flush()
-                print("The end !!")
+                print_in_red("结束！！")
                 return
             elif in_ == question[1]:
                 context.hint_one(one, RIGHT_SCORE)
                 break
             else:
-                print_in_red("输入有误，请重新输入！")
+                print_in_red("输入答案[%s]错误，请重新输入！" % in_)
                 pass
     context.excel_flush()
 
@@ -244,23 +257,27 @@ def get_question_and_answer(context: WordCollection, word: Word) -> list:
 
 
 def print_in_red(str):
-    print('\033[31m%s]' % str)
-    print('\033[0m')
+    logging.info(str)
+    print('\033[31m%s\033[0m' % str)
 
 
 def print_in_green(str):
-    print('\033[32m%s' % str)
-    print('\033[0m')
+    logging.info(str)
+    # print('\033[32m%s\033[0m' % str)
+
+
+def print_in_tip(str):
+    print_in_red("提示：%s,请重新输入！" % str)
 
 
 def print_in_yellow(str):
-    print('\033[33m%s' % str)
-    print('\033[0m')
+    logging.info(str)
+    # print('\033[33m%s\033[0m' % str)
 
 
 def print_in_wihte(str):
-    print('\033[0m%s' % str)
-    print('\033[0m')
+    logging.info(str)
+    print('\033[0m%s\033[0m' % str)
 
 
 if __name__ == '__main__':
