@@ -155,6 +155,9 @@ def load() -> WordCollection:
         rows = table.max_row
         for row in range(2, rows + 1):
             id = table.cell(row=row, column=1).value
+            if not id:
+                # 防止出现空行
+                continue
             word = table.cell(row=row, column=2).value
             mean = table.cell(row=row, column=3).value
             nums = int(table.cell(row=row, column=4).value)
