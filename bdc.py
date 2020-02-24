@@ -20,13 +20,13 @@ MIN_HIT_NUM = -20
 # 单词保证出现概率为0
 NO_SHOW_HIT_NUM = -999
 # tip
-TIP_MESSAGE = "需要提示输入@,不知道输入#,后续不再显示此单词输入$,退出输入%"
+TIP_MESSAGE = "提示输入@,不知道#,不再显示$,上一个不再显示%,退出输入&"
 # 正确得分
 RIGHT_SCORE = 5
 # 有提示后的得分
 HELF_RIGHT_SCORE = 1
 # 错误即不知道的得分
-WRONG_SCORE = -4
+WRONG_SCORE = -7
 # 问题类型占重
 # 填充
 FILL_QUESTION = 30
@@ -49,6 +49,7 @@ logging.basicConfig(level=logging.INFO,  # 控制台打印的日志级别
                     '%(asctime)s : %(message)s'  # 日志格式
 
                     )
+FLUSH_CACHE_SIZE = 10
 
 
 class Word:
@@ -121,15 +122,18 @@ class WordCollection:
             word.weight = new_weight
         # 刷入缓存重
         self.flush_list[word.id] = word.hit_nums
+        if len(self.flush_list) >= FLUSH_CACHE_SIZE:
+            self.excel_flush()
 
     def excel_flush(self):
-        print_in_red("结果开始刷新到磁盘")
+        print_in_red("缓存开始刷新到磁盘")
         # 缓存刷新到硬盘
         for k in self.flush_list:
             table = self.excel[self.sheet_name]
             table.cell(row=k + 1, column=5).value = self.flush_list[k]
         self.excel.save(XL_PATH)
-        print_in_red("结果开始刷新完毕")
+        print_in_red("刷新完毕")
+        self.flush_list = {}
 
     def pick_one(self) -> Word:
         # 随机挑选，按权重
@@ -197,40 +201,52 @@ def init():
     print_in_red(message)
     in_ = input()
     context.chose_sheet(context.sheet_names[int(in_)])
-
+    # 上一个单词
+    pre_word = None
     while True:
         one = context.pick_one()
         question = get_question_and_answer(context, one)
         print_in_wihte(question[0])
+        have_tip = False
         while True:
             in_ = input().lower()
             print_in_green("input:[%s]" % in_)
             if in_ == "@":
                 print_in_tip(question[1])
-                in_ = input()
-                print_in_green("input:[%s]" % in_)
-                if in_ == question[1]:
-                    context.hint_one(one, HELF_RIGHT_SCORE)
-                    break
-                else:
-                    print_in_red("输入有误，请重新输入！")
+                have_tip = True
+                pass
             elif in_ == "#":
                 print_in_red(one.word)
                 context.hint_one(one, WRONG_SCORE)
+                print_in_red("不认识，得分[%s]" % WRONG_SCORE)
                 break
             elif in_ == "$":
                 # 后续不再显示此单词
                 context.hint_one(one, NO_SHOW_HIT_NUM)
+                print_in_red("后续不再显示此单词")
+                break
             elif in_ == "%":
+                # 后续不再显示上一个单词
+                if pre_word:
+                    context.hint_one(pre_word, NO_SHOW_HIT_NUM)
+                print_in_red("后续不再显示上一个单词")
+                continue
+            elif in_ == "&":
                 context.excel_flush()
                 print_in_red("结束！！")
                 return
             elif in_ == question[1]:
-                context.hint_one(one, RIGHT_SCORE)
+                if have_tip:
+                    score = HELF_RIGHT_SCORE
+                else:
+                    score = RIGHT_SCORE
+                context.hint_one(one, score)
+                print_in_red("输入正确，得分[%s]" % str(score))
                 break
             else:
                 print_in_red("输入答案[%s]错误，请重新输入！" % in_)
                 pass
+        pre_word = one
     context.excel_flush()
 
 
