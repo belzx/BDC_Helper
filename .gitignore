@@ -1,5 +1,7 @@
 .idea
 bdc_helper.iml
-*.txt
 test.py
 *.log
+media/
+data/frequency_statistics.xlsx
+__pycache__

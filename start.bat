@@ -1,4 +1,4 @@
 @echo off
-pip install -r requirements.txt
 cd cd /d %~dp0
-python bdc.py
+pip install -r src/requirements.txt
+python bootstrap.py
